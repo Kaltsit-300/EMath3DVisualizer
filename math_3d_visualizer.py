@@ -325,6 +325,9 @@ class Canvas3D(QWidget):
         # 缓存最后一次绘制的方程数据，用于缩放重绘
         self._last_parsed_equations = []
 
+        # 上次真正重建 mesh 时的视图半径，用于判断是否需要重建
+        self._last_built_radius = 0.0
+
     # ── 可见性控制定时器生命周期（Fix-1 核心）─────
     def showEvent(self, event):
         """Canvas3D 变为可见时启动定时器（如 QStackedWidget 切换到此页）"""
@@ -398,9 +401,27 @@ class Canvas3D(QWidget):
         self._is_lod = False
         try:
             r = getattr(self, '_view_radius', 12.0)
+
+            # 【Fix】只有当视图半径变化超过 10% 时才真正重建 mesh 和交线。
+            # 旋转/平移不会改变 view_radius，因此不会触发不必要的重建，
+            # 交线 actor 始终保持可见，不再闪烁消失。
+            last_r = getattr(self, '_last_built_radius', 0.0)
+            radius_changed = (last_r < 1e-9 or
+                              abs(r - last_r) / max(last_r, 1e-9) > 0.10)
+
+            # 网格/坐标轴随视图半径动态更新（轻量操作，始终执行）
             self._update_grid_dynamic(r)
+
+            if not radius_changed:
+                # 视图半径无显著变化（旋转/平移场景），无需重建 mesh
+                return
+
             if not (hasattr(self, '_last_parsed_equations') and self._last_parsed_equations):
                 return
+
+            # 记录本次重建的半径
+            self._last_built_radius = r
+
             # Phase 1: 全精度曲面（force_update=True 走 mapper.SetInputData 快速路径）
             self.draw_equations(self._last_parsed_equations, force_update=True)
             # Phase 2: 重建交线（用全精度 mesh）
@@ -610,10 +631,10 @@ class Canvas3D(QWidget):
 
             def _on_interaction(obj, event):
                 self._refresh_cam_info()
-                # 拖拽时同样进入 LOD 模式，停止后恢复全精度
-                self._is_lod = True
-                self._view_update_timer.start(200)
-                self._zoom_end_timer.start(600)
+                # 【Fix】旋转/平移不改变相机距焦点的距离（view_radius不变），
+                # 无需重建 mesh 和交线，只需刷新相机信息即可。
+                # 仅由滚轮缩放（_handle_wheel_event）触发 _zoom_end_timer。
+                pass
 
             self.plotter.iren.add_observer(vtk.vtkCommand.InteractionEvent, _on_interaction)
             self._observer_added = True
@@ -922,6 +943,8 @@ class Canvas3D(QWidget):
         """
         self._busy = True
         self._last_parsed_equations = parsed_list_with_ids # 【New】缓存以备重绘
+        # 【Fix】记录本次绘制时的视图半径，供 _on_zoom_end 的变化阈值检查使用
+        self._last_built_radius = getattr(self, '_view_radius', 12.0)
         try:
             current_ids = set()
             new_data_map = {}
