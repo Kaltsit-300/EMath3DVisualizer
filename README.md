@@ -52,13 +52,22 @@ python -m venv venv
 venv\Scripts\activate
 ```
 
-安装依赖：
+## 依赖环境
 
-```bash
-pip install pyqt5 pyvista pyvistaqt vtk numpy sympy scikit-image
-```
+本项目基于 Python 3.10+ 开发。
 
-或使用 requirements.txt：
+需要安装以下核心依赖：
+
+- numpy
+- matplotlib
+- scipy
+- sympy
+- pyvista
+- pyvistaqt
+- PyQt5
+- vtk
+
+推荐直接使用：
 
 ```bash
 pip install -r requirements.txt
@@ -72,15 +81,6 @@ pip install -r requirements.txt
 python math_3d_visualizer.py
 ```
 
----
-
-## 项目结构
-
-```
-math_3d_visualizer.py
-```
-
----
 
 ## 使用场景
 
