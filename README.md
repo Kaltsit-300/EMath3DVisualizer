@@ -69,6 +69,8 @@ venv\Scripts\activate
 
 本项目基于 Python 3.10+ 开发。
 
+所有依赖的第三方库见requirements.txt
+
 需要安装以下核心依赖：
 
 - numpy
