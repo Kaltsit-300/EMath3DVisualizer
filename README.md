@@ -81,7 +81,7 @@ pip install -r requirements.txt
 python math_3d_visualizer.py
 ```
 
-
+---
 ## 使用场景
 
 - 三重积分做题辅助，用于分析空间中面与面和空间中体与面之间的位置关系，或分析面与面所围成的立体图形在空间里的具体位置
